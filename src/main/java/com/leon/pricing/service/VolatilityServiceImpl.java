@@ -1,8 +1,7 @@
-package com.leon.pricing.service.impl;
+package com.leon.pricing.service;
 
 import com.leon.pricing.model.Volatility;
 import com.leon.pricing.repository.VolatilityRepository;
-import com.leon.pricing.service.VolatilityService;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

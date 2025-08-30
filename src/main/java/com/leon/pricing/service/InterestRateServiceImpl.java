@@ -1,8 +1,7 @@
-package com.leon.pricing.service.impl;
+package com.leon.pricing.service;
 
 import com.leon.pricing.model.InterestRate;
 import com.leon.pricing.repository.InterestRateRepository;
-import com.leon.pricing.service.InterestRateService;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
