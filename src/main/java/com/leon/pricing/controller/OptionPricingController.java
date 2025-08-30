@@ -74,8 +74,7 @@ public class OptionPricingController
     }
     
     @PostMapping("/range/simple")
-    public ResponseEntity<OptionPriceResultSet> calculateRangeSimple(@Valid @RequestBody OptionPricingRequest baseRequest,
-        @RequestParam String rangeKey, @RequestParam double startValue, @RequestParam double endValue,  @RequestParam double increment)
+    public ResponseEntity<OptionPriceResultSet> calculateRangeSimple(@Valid @RequestBody OptionPricingRequest baseRequest, @RequestParam String rangeKey, @RequestParam double startValue, @RequestParam double endValue,  @RequestParam double increment)
     {
         try
         {

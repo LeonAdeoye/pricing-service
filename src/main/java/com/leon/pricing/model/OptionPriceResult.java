@@ -30,7 +30,8 @@ public class OptionPriceResult {
     
     public OptionPriceResult() {}
     
-    public OptionPriceResult(double delta, double gamma, double rho, double theta, double vega, double price) {
+    public OptionPriceResult(double delta, double gamma, double rho, double theta, double vega, double price)
+    {
         this.delta = delta;
         this.gamma = gamma;
         this.rho = rho;
@@ -40,28 +41,71 @@ public class OptionPriceResult {
     }
     
     // Getters and Setters
-    public double getDelta() { return delta; }
-    public void setDelta(double delta) { this.delta = delta; }
+    public double getDelta()
+    {
+        return delta;
+    }
+    public void setDelta(double delta)
+    {
+        this.delta = delta;
+    }
     
-    public double getGamma() { return gamma; }
-    public void setGamma(double gamma) { this.gamma = gamma; }
+    public double getGamma()
+    {
+        return gamma;
+    }
+    public void setGamma(double gamma)
+    {
+        this.gamma = gamma;
+    }
     
-    public double getRho() { return rho; }
-    public void setRho(double rho) { this.rho = rho; }
+    public double getRho()
+    {
+        return rho;
+    }
+    public void setRho(double rho)
+    {
+        this.rho = rho;
+    }
     
-    public double getTheta() { return theta; }
-    public void setTheta(double theta) { this.theta = theta; }
+    public double getTheta()
+    {
+        return theta;
+    }
+    public void setTheta(double theta)
+    {
+        this.theta = theta;
+    }
     
-    public double getVega() { return vega; }
-    public void setVega(double vega) { this.vega = vega; }
+    public double getVega()
+    {
+        return vega;
+    }
+    public void setVega(double vega)
+    {
+        this.vega = vega;
+    }
     
-    public double getPrice() { return price; }
-    public void setPrice(double price) { this.price = price; }
+    public double getPrice()
+    {
+        return price;
+    }
+    public void setPrice(double price)
+    {
+        this.price = price;
+    }
     
-    public double getRangeVariable() { return rangeVariable; }
-    public void setRangeVariable(double rangeVariable) { this.rangeVariable = rangeVariable; }
+    public double getRangeVariable()
+    {
+        return rangeVariable;
+    }
+    public void setRangeVariable(double rangeVariable)
+    {
+        this.rangeVariable = rangeVariable;
+    }
     
-    public void add(OptionPriceResult priceResult) {
+    public void add(OptionPriceResult priceResult)
+    {
         this.delta += priceResult.delta;
         this.gamma += priceResult.gamma;
         this.vega += priceResult.vega;
@@ -71,13 +115,15 @@ public class OptionPriceResult {
     }
     
     @Override
-    public String toString() {
+    public String toString()
+    {
         return String.format("OptionPriceResult{delta=%.6f, gamma=%.6f, vega=%.6f, theta=%.6f, rho=%.6f, price=%.6f, rangeVariable=%.6f}",
                 delta, gamma, vega, theta, rho, price, rangeVariable);
     }
     
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) return true;
         if (!(o instanceof OptionPriceResult)) return false;
         OptionPriceResult that = (OptionPriceResult) o;
@@ -91,7 +137,8 @@ public class OptionPriceResult {
     }
     
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(delta, gamma, rho, theta, vega, price, rangeVariable);
     }
 }

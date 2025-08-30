@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class OptionPriceResultSet {
+public class OptionPriceResultSet
+{
     
     @JsonProperty("results")
     private List<OptionPriceResult> results;
@@ -14,47 +15,57 @@ public class OptionPriceResultSet {
     @JsonProperty("totalCount")
     private int totalCount;
     
-    public OptionPriceResultSet() {
+    public OptionPriceResultSet()
+    {
         this.results = new ArrayList<>();
         this.totalCount = 0;
     }
     
-    public void merge(OptionPriceResult optionPriceResult) {
+    public void merge(OptionPriceResult optionPriceResult)
+    {
         this.results.add(optionPriceResult);
         this.totalCount++;
     }
     
-    public void addAll(OptionPriceResultSet otherSet) {
+    public void addAll(OptionPriceResultSet otherSet)
+    {
         this.results.addAll(otherSet.getResults());
         this.totalCount = this.results.size();
     }
     
-    public List<OptionPriceResult> getResults() {
+    public List<OptionPriceResult> getResults()
+    {
         return results;
     }
     
-    public void setResults(List<OptionPriceResult> results) {
+    public void setResults(List<OptionPriceResult> results)
+    {
         this.results = results;
         this.totalCount = results != null ? results.size() : 0;
     }
     
-    public int getTotalCount() {
+    public int getTotalCount()
+    {
         return totalCount;
     }
     
-    public void setTotalCount(int totalCount) {
+    public void setTotalCount(int totalCount)
+    {
         this.totalCount = totalCount;
     }
     
-    public boolean isEmpty() {
+    public boolean isEmpty()
+    {
         return results.isEmpty();
     }
     
-    public int size() {
+    public int size()
+    {
         return results.size();
     }
     
-    public void clear() {
+    public void clear()
+    {
         results.clear();
         totalCount = 0;
     }

@@ -47,9 +47,8 @@ public class OptionPricingRequest
     
     public OptionPricingRequest() {}
     
-    public OptionPricingRequest(Double strike, Double volatility, Double underlyingPrice, 
-                               Double daysToExpiry, Double interestRate, Boolean isCall, 
-                               Boolean isEuropean, Double dayCountConvention) {
+    public OptionPricingRequest(Double strike, Double volatility, Double underlyingPrice, Double daysToExpiry, Double interestRate, Boolean isCall, Boolean isEuropean, Double dayCountConvention)
+    {
         this.strike = strike;
         this.volatility = volatility;
         this.underlyingPrice = underlyingPrice;
@@ -85,17 +84,15 @@ public class OptionPricingRequest
     public Double getDayCountConvention() { return dayCountConvention; }
     public void setDayCountConvention(Double dayCountConvention) { this.dayCountConvention = dayCountConvention; }
     
-    /**
-     * Calculates time to expiry in years.
-     * 
-     * NOTE: For production use, this calculation should consider:
-     * - Business days vs calendar days
-     * - Market holidays (query external holiday service)
-     * - Day count conventions (30/360, Actual/365, etc.)
-     * 
-     * @return time to expiry in years
-     */
-    public double getTimeToExpiryInYears() {
+    public double getTimeToExpiryInYears()
+    {
         return daysToExpiry / dayCountConvention;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("OptionPricingRequest{strike=%.2f, volatility=%.2f, underlyingPrice=%.2f, daysToExpiry=%.2f, interestRate=%.2f, isCall=%b, isEuropean=%b, dayCountConvention=%.2f}",
+                strike, volatility, underlyingPrice, daysToExpiry, interestRate, isCall, isEuropean, dayCountConvention);
     }
 }
