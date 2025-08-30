@@ -153,7 +153,6 @@ public class EuropeanBlackScholesModel implements OptionModel
     {
         try
         {
-            //return cumulativeNormalDistribution(this.adjustedNormalizedDrift) / (underlyingPrice * volatility * this.squareRootOfTimeToExpiryInYears);
             return standardNormalProbabilityDensityFunction(this.adjustedNormalizedDrift) / (underlyingPrice * volatility * this.squareRootOfTimeToExpiryInYears);
         }
         catch (Exception e)
