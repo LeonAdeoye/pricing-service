@@ -100,10 +100,10 @@ public class OptionPricingServiceImpl implements OptionPricingService
     {
         Map<String, Double> input = new HashMap<>();
         input.put(OptionModel.STRIKE, request.getStrike());
-        input.put(OptionModel.VOLATILITY, request.getVolatility()/100);
+        input.put(OptionModel.VOLATILITY, request.getVolatility());
         input.put(OptionModel.UNDERLYING_PRICE, request.getUnderlyingPrice());
         input.put(OptionModel.TIME_TO_EXPIRY, request.getTimeToExpiryInYears());
-        input.put(OptionModel.INTEREST_RATE, request.getInterestRate()/100);
+        input.put(OptionModel.INTEREST_RATE, request.getInterestRate());
         return input;
     }
 }
