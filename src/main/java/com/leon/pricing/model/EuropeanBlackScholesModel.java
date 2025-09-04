@@ -77,6 +77,7 @@ public class EuropeanBlackScholesModel implements OptionModel
             {
                 input.put(rangeKey, value);
                 OptionPriceResult optionPriceResult = calculate(input);
+                logger.info("Range key: {} Input parameters: {} Calculated OptionPriceResult: {}", rangeKey, input, optionPriceResult);
                 optionPriceResult.setRangeVariable(value);
                 optionPriceResultSet.merge(optionPriceResult);
             }

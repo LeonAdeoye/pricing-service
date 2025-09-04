@@ -4,11 +4,11 @@ import java.util.Map;
 
 public interface OptionModel
 {
-    String STRIKE = "strike";
-    String VOLATILITY = "volatility";
-    String UNDERLYING_PRICE = "underlyingPrice";
-    String TIME_TO_EXPIRY = "timeToExpiry";
-    String INTEREST_RATE = "interestRate";
+    String STRIKE = "STRIKE";
+    String VOLATILITY = "VOLATILITY";
+    String UNDERLYING_PRICE = "UNDERLYING_PRICE";
+    String TIME_TO_EXPIRY = "TIME_TO_EXPIRY";
+    String INTEREST_RATE = "INTEREST_RATE";
 
     void setToCall(boolean isCallOption);
     void setToEuropean(boolean isEuropeanOption);
