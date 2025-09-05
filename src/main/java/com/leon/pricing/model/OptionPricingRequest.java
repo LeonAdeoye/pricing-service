@@ -45,6 +45,9 @@ public class OptionPricingRequest
     @JsonProperty("dayCountConvention")
     private Double dayCountConvention;
     
+    @JsonProperty("modelType")
+    private String modelType;
+    
     public OptionPricingRequest() {}
     
     public OptionPricingRequest(Double strike, Double volatility, Double underlyingPrice, Double daysToExpiry, Double interestRate, Boolean isCall, Boolean isEuropean, Double dayCountConvention)
@@ -83,6 +86,9 @@ public class OptionPricingRequest
     
     public Double getDayCountConvention() { return dayCountConvention; }
     public void setDayCountConvention(Double dayCountConvention) { this.dayCountConvention = dayCountConvention; }
+    
+    public String getModelType() { return modelType; }
+    public void setModelType(String modelType) { this.modelType = modelType; }
     
     public double getTimeToExpiryInYears()
     {

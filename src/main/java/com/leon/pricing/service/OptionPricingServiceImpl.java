@@ -12,18 +12,57 @@ import java.util.Map;
 public class OptionPricingServiceImpl implements OptionPricingService
 {
     private static final Logger logger = LoggerFactory.getLogger(OptionPricingServiceImpl.class);
+    
     @Autowired
-    private OptionModel optionModel;
+    private EuropeanBlackScholesModel europeanBlackScholesModel;
+    
+    @Autowired
+    private MonteCarloOptionModel monteCarloOptionModel;
+    
+    @Autowired
+    private BinomialTreeOptionModel binomialTreeOptionModel;
+    
+    @Autowired
+    private AmericanBlackScholesModel americanBlackScholesModel;
+    
+    private OptionModel getOptionModel(String modelType)
+    {
+        if (modelType == null || modelType.trim().isEmpty())
+        {
+            return europeanBlackScholesModel; // Default model
+        }
+        
+        switch (modelType.toLowerCase())
+        {
+            case "european":
+            case "european_black_scholes":
+            case "black_scholes":
+                return europeanBlackScholesModel;
+            case "monte_carlo":
+            case "monte_carlo_simulation":
+                return monteCarloOptionModel;
+            case "binomial":
+            case "binomial_tree":
+                return binomialTreeOptionModel;
+            case "american":
+            case "american_black_scholes":
+                return americanBlackScholesModel;
+            default:
+                logger.warn("Unknown model type: {}, using default European Black-Scholes model", modelType);
+                return europeanBlackScholesModel;
+        }
+    }
     
     @Override
     public OptionPriceResult calculateOptionPrice(OptionPricingRequest request)
     {
         validateRequest(request);
-        optionModel.setToCall(request.getIsCall());
-        optionModel.setToEuropean(request.getIsEuropean());
+        OptionModel model = getOptionModel(request.getModelType());
+        model.setToCall(request.getIsCall());
+        model.setToEuropean(request.getIsEuropean());
         Map<String, Double> input = createInputMap(request);
-        OptionPriceResult result = optionModel.calculate(input);
-        logger.info("Option price calculation completed: {}", result);
+        OptionPriceResult result = model.calculate(input);
+        logger.info("Option price calculation completed using {}: {}", model.getClass().getSimpleName(), result);
         return result;
     }
     
@@ -33,12 +72,13 @@ public class OptionPricingServiceImpl implements OptionPricingService
         logger.info("Calculating range for {} from {} to {} with increment {}", rangeKey, startValue, endValue, increment);
         validateRequest(baseRequest);
         validateRangeParameters(rangeKey, startValue, endValue, increment);
-        optionModel.setToCall(baseRequest.getIsCall());
-        optionModel.setToEuropean(baseRequest.getIsEuropean());
+        OptionModel model = getOptionModel(baseRequest.getModelType());
+        model.setToCall(baseRequest.getIsCall());
+        model.setToEuropean(baseRequest.getIsEuropean());
         Map<String, Double> input = createInputMap(baseRequest);
         OptionPriceResultSet resultSet = new OptionPriceResultSet();
-        optionModel.calculateRange(resultSet, input, rangeKey, startValue, endValue, increment);
-        logger.info("Range calculation completed with {} results", resultSet.getTotalCount());
+        model.calculateRange(resultSet, input, rangeKey, startValue, endValue, increment);
+        logger.info("Range calculation completed using {} with {} results", model.getClass().getSimpleName(), resultSet.getTotalCount());
         return resultSet;
     }
     
@@ -51,7 +91,7 @@ public class OptionPricingServiceImpl implements OptionPricingService
     @Override
     public String getModelDetails()
     {
-        return optionModel.getModelDetails();
+        return "Available Models: European Black-Scholes, Monte Carlo Simulation, Binomial Tree, American Black-Scholes";
     }
     
     private void validateRequest(OptionPricingRequest request)
@@ -79,9 +119,6 @@ public class OptionPricingServiceImpl implements OptionPricingService
         
         if (request.getIsEuropean() == null)
             throw new IllegalArgumentException("Is European flag cannot be null");
-        
-        if (!request.getIsEuropean())
-            throw new IllegalArgumentException("Only European options are supported");
     }
     
     private void validateRangeParameters(String rangeKey, double startValue, double endValue, double increment)
