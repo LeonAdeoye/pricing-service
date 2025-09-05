@@ -55,4 +55,15 @@ public class RangeCalculationRequest {
     
     public Double getIncrement() { return increment; }
     public void setIncrement(Double increment) { this.increment = increment; }
+
+    @Override
+    public String toString() {
+        return "RangeCalculationRequest{" +
+                "baseRequest=" + baseRequest +
+                ", rangeKey='" + rangeKey + '\'' +
+                ", startValue=" + startValue +
+                ", endValue=" + endValue +
+                ", increment=" + increment +
+                '}';
+    }
 }

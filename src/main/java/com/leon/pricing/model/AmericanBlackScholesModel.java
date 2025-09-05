@@ -15,6 +15,7 @@ public class AmericanBlackScholesModel implements OptionModel
     private double adjustedNormalizedDrift = 0.0;
     private double adjustedNormalizedDriftOffsetByVolatility = 0.0;
     private double discountFactor = 0.0;
+    private double timeToExpiryInYears = 0.0;
     private boolean isCallOption = true;
     private boolean isEuropeanOption = false;
     private int maxIterations = DEFAULT_ITERATIONS;
@@ -54,6 +55,7 @@ public class AmericanBlackScholesModel implements OptionModel
             logger.info("Calculating American option price using Black-Scholes with early exercise - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
                          volatility, interestRate, strike, underlyingPrice, timeToExpiryInYears);
 
+            this.timeToExpiryInYears = timeToExpiryInYears;
             this.adjustedNormalizedDrift = (log(underlyingPrice/strike) + ((interestRate + ((volatility * volatility)/2)) * timeToExpiryInYears)) / (volatility * sqrt(timeToExpiryInYears));
             this.adjustedNormalizedDriftOffsetByVolatility = this.adjustedNormalizedDrift - (volatility * sqrt(timeToExpiryInYears));
             this.discountFactor = exp(-interestRate * timeToExpiryInYears);
@@ -62,12 +64,25 @@ public class AmericanBlackScholesModel implements OptionModel
             double optionPrice = calculateAmericanOptionPrice(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
             optionResult.setPrice(optionPrice);
             
-            // Calculate Greeks
-            optionResult.setDelta(calculateAmericanDelta(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
-            optionResult.setGamma(calculateAmericanGamma(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
-            optionResult.setVega(calculateAmericanVega(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
-            optionResult.setRho(calculateAmericanRho(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
-            optionResult.setTheta(calculateAmericanTheta(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears, dayCountConvention));
+            // Calculate Greeks - for American calls, use European Greeks since early exercise is not optimal
+            if (isCallOption)
+            {
+                // For American calls on non-dividend paying stocks, Greeks equal European Greeks
+                optionResult.setDelta(calculateEuropeanDelta());
+                optionResult.setGamma(calculateEuropeanGamma(underlyingPrice, volatility));
+                optionResult.setVega(calculateEuropeanVega(underlyingPrice));
+                optionResult.setRho(calculateEuropeanRho(strike, timeToExpiryInYears, interestRate));
+                optionResult.setTheta(calculateEuropeanTheta(underlyingPrice, strike, interestRate, volatility, dayCountConvention));
+            }
+            else
+            {
+                // For American puts, use finite difference methods
+                optionResult.setDelta(calculateAmericanDelta(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
+                optionResult.setGamma(calculateAmericanGamma(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
+                optionResult.setVega(calculateAmericanVega(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
+                optionResult.setRho(calculateAmericanRho(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears));
+                optionResult.setTheta(calculateAmericanTheta(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears, dayCountConvention));
+            }
             
             return optionResult;
         }
@@ -199,6 +214,51 @@ public class AmericanBlackScholesModel implements OptionModel
         double priceUp = calculateAmericanOptionPrice(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears + epsilon);
         double priceDown = calculateAmericanOptionPrice(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears - epsilon);
         return (priceUp - priceDown) / (2 * epsilon) / dayCountConvention;
+    }
+    
+    // European Greeks methods for American calls
+    private double calculateEuropeanDelta()
+    {
+        if (this.isCallOption)
+            return cumulativeNormalDistribution(this.adjustedNormalizedDrift);
+        else
+            return cumulativeNormalDistribution(this.adjustedNormalizedDrift) - 1;
+    }
+    
+    private double calculateEuropeanGamma(double underlyingPrice, double volatility)
+    {
+        return standardNormalProbabilityDensityFunction(this.adjustedNormalizedDrift) / (underlyingPrice * volatility * sqrt(timeToExpiryInYears));
+    }
+    
+    private double calculateEuropeanVega(double underlyingPrice)
+    {
+        return underlyingPrice * standardNormalProbabilityDensityFunction(this.adjustedNormalizedDrift) * sqrt(timeToExpiryInYears) * 0.01;
+    }
+    
+    private double calculateEuropeanRho(double strike, double timeToExpiryInYears, double interestRate)
+    {
+        if (this.isCallOption)
+            return strike * timeToExpiryInYears * this.discountFactor * cumulativeNormalDistribution(this.adjustedNormalizedDriftOffsetByVolatility) * 0.01;
+        else
+            return -strike * timeToExpiryInYears * this.discountFactor * cumulativeNormalDistribution(-this.adjustedNormalizedDriftOffsetByVolatility) * 0.01;
+    }
+    
+    private double calculateEuropeanTheta(double underlyingPrice, double strike, double interestRate, double volatility, double dayCountConvention)
+    {
+        double firstTerm = -(underlyingPrice * standardNormalProbabilityDensityFunction(this.adjustedNormalizedDrift) * volatility) / (2 * sqrt(timeToExpiryInYears));
+        double secondTerm;
+
+        if (this.isCallOption)
+            secondTerm = -interestRate * strike * this.discountFactor * cumulativeNormalDistribution(this.adjustedNormalizedDriftOffsetByVolatility);
+        else
+            secondTerm = interestRate * strike * this.discountFactor * cumulativeNormalDistribution(-this.adjustedNormalizedDriftOffsetByVolatility);
+
+        return (firstTerm + secondTerm) / dayCountConvention;
+    }
+    
+    private double standardNormalProbabilityDensityFunction(double x)
+    {
+        return (1.0 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * x * x);
     }
 
     private double cumulativeNormalDistribution(double input)
