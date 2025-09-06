@@ -2,8 +2,14 @@ package com.leon.pricing.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import static java.lang.Math.*;
 
 @Component
@@ -19,6 +25,10 @@ public class AmericanBlackScholesModel implements OptionModel
     private boolean isCallOption = true;
     private boolean isEuropeanOption = false;
     private int maxIterations = DEFAULT_ITERATIONS;
+    
+    @org.springframework.beans.factory.annotation.Autowired
+    @Qualifier("rangeCalculationExecutor")
+    private Executor rangeCalculationExecutor;
     
     public AmericanBlackScholesModel() {}
     
@@ -98,14 +108,46 @@ public class AmericanBlackScholesModel implements OptionModel
     {
         try
         {
-            for (double value = startValue; value <= endValue; value += increment)
+            int iterations = (int) Math.ceil((endValue - startValue) / increment) + 1;
+            List<CompletableFuture<OptionPriceResult>> futures = new ArrayList<>();
+            
+            for (int i = 0; i < iterations; i++)
             {
-                input.put(rangeKey, value);
-                OptionPriceResult optionPriceResult = calculate(input);
-                logger.info("Range key: {} Input parameters: {} Calculated OptionPriceResult: {}", rangeKey, input, optionPriceResult);
-                optionPriceResult.setRangeVariable(value);
-                optionPriceResultSet.merge(optionPriceResult);
+                double value = startValue + (i * increment);
+                if (value > endValue) break;
+                
+                final double currentValue = value;
+                CompletableFuture<OptionPriceResult> future = CompletableFuture.supplyAsync(() -> 
+                {
+                    Map<String, Double> inputCopy = new HashMap<>(input);
+                    inputCopy.put(rangeKey, currentValue);
+                    OptionPriceResult result = calculate(inputCopy);
+                    result.setRangeVariable(currentValue);
+                    return result;
+                }, rangeCalculationExecutor);
+                
+                futures.add(future);
             }
+            
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                futures.toArray(new CompletableFuture[0])
+            );
+            
+            allFutures.thenRun(() -> 
+            {
+                for (CompletableFuture<OptionPriceResult> future : futures)
+                {
+                    try
+                    {
+                        OptionPriceResult result = future.get();
+                        optionPriceResultSet.merge(result);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Error getting future result: {}", e.getMessage());
+                    }
+                }
+            }).join();
         }
         catch (Exception e)
         {
@@ -117,13 +159,11 @@ public class AmericanBlackScholesModel implements OptionModel
     private double calculateAmericanOptionPrice(double underlyingPrice, double strike, double volatility, double interestRate, double timeToExpiryInYears)
     {
         if (isCallOption)
-        {
             return calculateAmericanCallPrice(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
-        }
+    
         else
-        {
             return calculateAmericanPutPrice(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
-        }
+
     }
     
     private double calculateAmericanCallPrice(double underlyingPrice, double strike, double volatility, double interestRate, double timeToExpiryInYears)

@@ -2,9 +2,15 @@ package com.leon.pricing.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import static java.lang.Math.*;
 
 @Component
@@ -17,6 +23,10 @@ public class MonteCarloOptionModel implements OptionModel
     private boolean isCallOption = true;
     private boolean isEuropeanOption = true;
     private int numberOfSimulations = DEFAULT_SIMULATIONS;
+    
+    @org.springframework.beans.factory.annotation.Autowired
+    @Qualifier("rangeCalculationExecutor")
+    private Executor rangeCalculationExecutor;
     
     public MonteCarloOptionModel() {}
     
@@ -83,14 +93,46 @@ public class MonteCarloOptionModel implements OptionModel
     {
         try
         {
-            for (double value = startValue; value <= endValue; value += increment)
+            int iterations = (int) Math.ceil((endValue - startValue) / increment) + 1;
+            List<CompletableFuture<OptionPriceResult>> futures = new ArrayList<>();
+            
+            for (int i = 0; i < iterations; i++)
             {
-                input.put(rangeKey, value);
-                OptionPriceResult optionPriceResult = calculate(input);
-                logger.info("Range key: {} Input parameters: {} Calculated OptionPriceResult: {}", rangeKey, input, optionPriceResult);
-                optionPriceResult.setRangeVariable(value);
-                optionPriceResultSet.merge(optionPriceResult);
+                double value = startValue + (i * increment);
+                if (value > endValue) break;
+                
+                final double currentValue = value;
+                CompletableFuture<OptionPriceResult> future = CompletableFuture.supplyAsync(() -> 
+                {
+                    Map<String, Double> inputCopy = new HashMap<>(input);
+                    inputCopy.put(rangeKey, currentValue);
+                    OptionPriceResult result = calculate(inputCopy);
+                    result.setRangeVariable(currentValue);
+                    return result;
+                }, rangeCalculationExecutor);
+                
+                futures.add(future);
             }
+            
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                futures.toArray(new CompletableFuture[0])
+            );
+            
+            allFutures.thenRun(() -> 
+            {
+                for (CompletableFuture<OptionPriceResult> future : futures)
+                {
+                    try
+                    {
+                        OptionPriceResult result = future.get();
+                        optionPriceResultSet.merge(result);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Error getting future result: {}", e.getMessage());
+                    }
+                }
+            }).join();
         }
         catch (Exception e)
         {

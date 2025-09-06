@@ -1,12 +1,15 @@
 package com.leon.pricing.service;
 
 import com.leon.pricing.model.*;
+import com.leon.pricing.service.PerformanceTrackingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @Service
 public class OptionPricingServiceImpl implements OptionPricingService
@@ -25,6 +28,13 @@ public class OptionPricingServiceImpl implements OptionPricingService
     @Autowired
     private AmericanBlackScholesModel americanBlackScholesModel;
     
+    @Autowired
+    private PerformanceTrackingService performanceTrackingService;
+    
+    @Autowired
+    @Qualifier("rangeCalculationExecutor")
+    private Executor rangeCalculationExecutor;
+
     private OptionModel getOptionModel(String modelType)
     {
         if (modelType == null || modelType.trim().isEmpty())
@@ -69,17 +79,32 @@ public class OptionPricingServiceImpl implements OptionPricingService
     @Override
     public OptionPriceResultSet calculateRange(OptionPricingRequest baseRequest, String rangeKey, double startValue, double endValue, double increment)
     {
+        long startTime = System.currentTimeMillis();
         logger.info("Calculating range for {} from {} to {} with increment {}", rangeKey, startValue, endValue, increment);
-        validateRequest(baseRequest);
-        validateRangeParameters(rangeKey, startValue, endValue, increment);
-        OptionModel model = getOptionModel(baseRequest.getModelType());
-        model.setToCall(baseRequest.getIsCall());
-        model.setToEuropean(baseRequest.getIsEuropean());
-        Map<String, Double> input = createInputMap(baseRequest);
-        OptionPriceResultSet resultSet = new OptionPriceResultSet();
-        model.calculateRange(resultSet, input, rangeKey, startValue, endValue, increment);
-        logger.info("Range calculation completed using {} with {} results", model.getClass().getSimpleName(), resultSet.getTotalCount());
-        return resultSet;
+        
+        try {
+            validateRequest(baseRequest);
+            validateRangeParameters(rangeKey, startValue, endValue, increment);
+            OptionModel model = getOptionModel(baseRequest.getModelType());
+            model.setToCall(baseRequest.getIsCall());
+            model.setToEuropean(baseRequest.getIsEuropean());
+            Map<String, Double> input = createInputMap(baseRequest);
+            OptionPriceResultSet resultSet = new OptionPriceResultSet();
+            model.calculateRange(resultSet, input, rangeKey, startValue, endValue, increment);
+            
+            long executionTime = System.currentTimeMillis() - startTime;
+            logger.info("Range calculation completed using {} with {} results in {}ms", 
+                       model.getClass().getSimpleName(), resultSet.getTotalCount(), executionTime);
+            
+            // Record performance metrics
+            performanceTrackingService.recordRangeCalculation(baseRequest.getModelType(), executionTime);
+            
+            return resultSet;
+        } catch (Exception e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            logger.error("Range calculation failed after {}ms: {}", executionTime, e.getMessage(), e);
+            throw e;
+        }
     }
     
     @Override
