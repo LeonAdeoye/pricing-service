@@ -27,7 +27,17 @@
         <appender-ref ref="FILE" />
     </root>
 
-    <logger level="TRACE" name="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"/>
+    <logger level="TRACE" name="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+                <expression>
+                    return message.contains("Mapped") &amp;&amp; !message.contains("Mapped to");
+                </expression>
+            </evaluator>
+            <onMismatch>DENY</onMismatch>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+    </logger>
 
     <logger name="com.leon.pricing" level="INFO"/>
 </configuration>

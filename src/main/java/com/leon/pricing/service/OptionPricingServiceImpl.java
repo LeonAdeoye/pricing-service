@@ -1,11 +1,11 @@
 package com.leon.pricing.service;
 
 import com.leon.pricing.model.*;
-import com.leon.pricing.service.PerformanceTrackingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,12 +35,17 @@ public class OptionPricingServiceImpl implements OptionPricingService
     @Qualifier("rangeCalculationExecutor")
     private Executor rangeCalculationExecutor;
 
+    @Value("${log.single.calculation}")
+    private boolean logSingleCalculation;
+
+    @Value("${log.range.calculations}")
+    private boolean logRangeCalculations;
+
+
     private OptionModel getOptionModel(String modelType)
     {
         if (modelType == null || modelType.trim().isEmpty())
-        {
             return europeanBlackScholesModel; // Default model
-        }
         
         switch (modelType.toLowerCase())
         {
@@ -71,7 +76,7 @@ public class OptionPricingServiceImpl implements OptionPricingService
         model.setToCall(request.getIsCall());
         model.setToEuropean(request.getIsEuropean());
         Map<String, Double> input = createInputMap(request);
-        OptionPriceResult result = model.calculate(input);
+        OptionPriceResult result = model.calculate(input, logSingleCalculation);
         logger.info("Option price calculation completed using {}: {}", model.getClass().getSimpleName(), result);
         return result;
     }
@@ -82,7 +87,8 @@ public class OptionPricingServiceImpl implements OptionPricingService
         long startTime = System.currentTimeMillis();
         logger.info("Calculating range for {} from {} to {} with increment {}", rangeKey, startValue, endValue, increment);
         
-        try {
+        try
+        {
             validateRequest(baseRequest);
             validateRangeParameters(rangeKey, startValue, endValue, increment);
             OptionModel model = getOptionModel(baseRequest.getModelType());
@@ -90,17 +96,14 @@ public class OptionPricingServiceImpl implements OptionPricingService
             model.setToEuropean(baseRequest.getIsEuropean());
             Map<String, Double> input = createInputMap(baseRequest);
             OptionPriceResultSet resultSet = new OptionPriceResultSet();
-            model.calculateRange(resultSet, input, rangeKey, startValue, endValue, increment);
-            
+            model.calculateRange(resultSet, input, rangeKey, startValue, endValue, increment, logRangeCalculations);
             long executionTime = System.currentTimeMillis() - startTime;
-            logger.info("Range calculation completed using {} with {} results in {}ms", 
-                       model.getClass().getSimpleName(), resultSet.getTotalCount(), executionTime);
-            
-            // Record performance metrics
+            logger.info("Range calculation completed using {} with {} results in {}ms", model.getClass().getSimpleName(), resultSet.getTotalCount(), executionTime);
             performanceTrackingService.recordRangeCalculation(baseRequest.getModelType(), executionTime);
-            
             return resultSet;
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             long executionTime = System.currentTimeMillis() - startTime;
             logger.error("Range calculation failed after {}ms: {}", executionTime, e.getMessage(), e);
             throw e;

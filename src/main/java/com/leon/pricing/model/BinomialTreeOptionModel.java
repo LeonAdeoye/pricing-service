@@ -46,7 +46,7 @@ public class BinomialTreeOptionModel implements OptionModel
     }
 
     @Override
-    public OptionPriceResult calculate(Map<String, Double> input)
+    public OptionPriceResult calculate(Map<String, Double> input, boolean logCalculation)
     {
         OptionPriceResult optionResult = new OptionPriceResult();
         try
@@ -57,14 +57,13 @@ public class BinomialTreeOptionModel implements OptionModel
             double underlyingPrice = input.get(UNDERLYING_PRICE);
             double timeToExpiryInYears = input.get(TIME_TO_EXPIRY);
 
-            logger.info("Calculating option price using Binomial Tree with {} steps - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
+            if (logCalculation)
+                logger.info("Calculating option price using Binomial Tree with {} steps - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
                          numberOfSteps, volatility, interestRate, strike, underlyingPrice, timeToExpiryInYears);
 
-            // Calculate option price using Binomial Tree
             double optionPrice = calculateBinomialPrice(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
             optionResult.setPrice(optionPrice);
-            
-            // Calculate Greeks using finite difference method
+
             double delta = calculateDelta(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
             double gamma = calculateGamma(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
             double vega = calculateVega(underlyingPrice, strike, volatility, interestRate, timeToExpiryInYears);
@@ -87,7 +86,7 @@ public class BinomialTreeOptionModel implements OptionModel
     }
     
     @Override
-    public void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment)
+    public void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment, boolean logCalculations)
     {
         try
         {
@@ -104,7 +103,7 @@ public class BinomialTreeOptionModel implements OptionModel
                 {
                     Map<String, Double> inputCopy = new HashMap<>(input);
                     inputCopy.put(rangeKey, currentValue);
-                    OptionPriceResult result = calculate(inputCopy);
+                    OptionPriceResult result = calculate(inputCopy, logCalculations);
                     result.setRangeVariable(currentValue);
                     return result;
                 }, rangeCalculationExecutor);

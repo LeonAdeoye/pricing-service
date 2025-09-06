@@ -12,7 +12,7 @@ public interface OptionModel
 
     void setToCall(boolean isCallOption);
     void setToEuropean(boolean isEuropeanOption);
-    OptionPriceResult calculate(Map<String, Double> input);
-    void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment);
+    OptionPriceResult calculate(Map<String, Double> input, boolean logCalculation);
+    void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment, boolean logCalculation);
     String getModelDetails();
 }

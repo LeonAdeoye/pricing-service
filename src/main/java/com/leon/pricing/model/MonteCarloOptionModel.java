@@ -48,7 +48,7 @@ public class MonteCarloOptionModel implements OptionModel
     }
 
     @Override
-    public OptionPriceResult calculate(Map<String, Double> input)
+    public OptionPriceResult calculate(Map<String, Double> input, boolean logCalculation)
     {
         OptionPriceResult optionResult = new OptionPriceResult();
         try
@@ -59,7 +59,8 @@ public class MonteCarloOptionModel implements OptionModel
             double underlyingPrice = input.get(UNDERLYING_PRICE);
             double timeToExpiryInYears = input.get(TIME_TO_EXPIRY);
 
-            logger.info("Calculating option price using Monte Carlo simulation with {} simulations - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
+            if (logCalculation)
+                logger.info("Calculating option price using Monte Carlo simulation with {} simulations - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
                          numberOfSimulations, volatility, interestRate, strike, underlyingPrice, timeToExpiryInYears);
 
             // Calculate option price using Monte Carlo
@@ -89,7 +90,7 @@ public class MonteCarloOptionModel implements OptionModel
     }
     
     @Override
-    public void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment)
+    public void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment, boolean logCalculations)
     {
         try
         {
@@ -106,7 +107,7 @@ public class MonteCarloOptionModel implements OptionModel
                 {
                     Map<String, Double> inputCopy = new HashMap<>(input);
                     inputCopy.put(rangeKey, currentValue);
-                    OptionPriceResult result = calculate(inputCopy);
+                    OptionPriceResult result = calculate(inputCopy, logCalculations);
                     result.setRangeVariable(currentValue);
                     return result;
                 }, rangeCalculationExecutor);

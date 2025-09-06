@@ -50,7 +50,7 @@ public class AmericanBlackScholesModel implements OptionModel
     }
 
     @Override
-    public OptionPriceResult calculate(Map<String, Double> input)
+    public OptionPriceResult calculate(Map<String, Double> input, boolean logCalculation)
     {
         OptionPriceResult optionResult = new OptionPriceResult();
         try
@@ -62,7 +62,8 @@ public class AmericanBlackScholesModel implements OptionModel
             double timeToExpiryInYears = input.get(TIME_TO_EXPIRY);
             double dayCountConvention = input.getOrDefault("DAY_COUNT_CONVENTION", 250.0);
 
-            logger.info("Calculating American option price using Black-Scholes with early exercise - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
+            if(logCalculation)
+                logger.info("Calculating American option price using Black-Scholes with early exercise - Volatility: {}, Interest Rate: {}, Strike: {}, Underlying Price: {}, Time to Expiry (years): {}",
                          volatility, interestRate, strike, underlyingPrice, timeToExpiryInYears);
 
             this.timeToExpiryInYears = timeToExpiryInYears;
@@ -104,7 +105,7 @@ public class AmericanBlackScholesModel implements OptionModel
     }
     
     @Override
-    public void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment)
+    public void calculateRange(OptionPriceResultSet optionPriceResultSet, Map<String, Double> input, String rangeKey, double startValue, double endValue, double increment, boolean logCalculations)
     {
         try
         {
@@ -121,7 +122,7 @@ public class AmericanBlackScholesModel implements OptionModel
                 {
                     Map<String, Double> inputCopy = new HashMap<>(input);
                     inputCopy.put(rangeKey, currentValue);
-                    OptionPriceResult result = calculate(inputCopy);
+                    OptionPriceResult result = calculate(inputCopy,logCalculations);
                     result.setRangeVariable(currentValue);
                     return result;
                 }, rangeCalculationExecutor);
